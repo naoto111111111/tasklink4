@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskLink</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", sans-serif;
+      background-color: #f2f4f7;
+    }
+    header {
+      background-color: #fff;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #003366;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .container, .team-container, .chat-container, .settings-container {
+      padding: 1rem;
+      display: none;
+    }
+    .active {
+      display: block;
+    }
+    .button, .submit-button {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      background-color: #eaf4ff;
+      border: 2px dashed #007bff;
+      color: #007bff;
+      border-radius: 12px;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button:hover, .submit-button:hover {
+      background-color: #d0eaff;
+    }
+    .team-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      cursor: pointer;
+    }
+    .team-title {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .progress-bar {
+      background-color: #e0e0e0;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+    .progress {
+      background-color: #007bff;
+      height: 10px;
+    }
+    .nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      background: #fff;
+      border-top: 1px solid #ccc;
+    }
+    .nav a {
+      padding: 0.6rem;
+      text-align: center;
+      color: #333;
+      text-decoration: none;
+      flex-grow: 1;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .comment {
+      background: #dcf8c6;
+      padding: 0.5rem;
+      border-radius: 12px;
+      margin-top: 0.3rem;
+      font-size: 0.9rem;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>TaskLink</header>
+
+  <!-- ホーム画面 -->
+  <div class="container active" id="home">
+    <button class="button" onclick="toggleTeamForm()">＋ チームを作成</button>
+    <div id="teamForm" class="hidden">
+      <input id="taskName" placeholder="チーム名" style="width: 100%; padding: 0.5rem;">
+      <input id="taskOwner" placeholder="担当者" style="width: 100%; padding: 0.5rem;">
+      <input id="taskDeadline" type="date" style="width: 100%; padding: 0.5rem;">
+      <select id="taskPriority" style="width: 100%; padding: 0.5rem;">
+        <option value="高">高</option>
+        <option value="中">中</option>
+        <option value="低">低</option>
+      </select>
+      <button class="submit-button" onclick="createTeam()">作成</button>
+    </div>
+    <div id="teamList"></div>
+  </div>
+
+  <!-- チーム画面 -->
+  <div class="team-container" id="team"></div>
+
+  <!-- 通知画面 -->
+  <div class="chat-container" id="notifications">
+    <div class="chat-message">MT（2024/04/15）: よろしくお願いします。</div>
+  </div>
+
+  <!-- 設定画面 -->
+  <div class="settings-container" id="settings">
+    <div class="setting-option">
+      <label><input type="checkbox"> 通知をオンにする</label>
+    </div>
+    <div class="setting-option">
+      <label>言語設定：
+        <select>
+          <option>日本語</option>
+          <option>English</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <!-- ナビゲーション -->
+  <nav class="nav">
+    <a onclick="showPage('home')">ホーム</a>
+    <a onclick="showPage('team')">チーム</a>
+    <a onclick="showPage('notifications')">通知</a>
+    <a onclick="showPage('settings')">設定</a>
+  </nav>
+
+  <script>
+    let teams = [];
+    let selectedTeamIndex = null;
+
+    function showPage(pageId) {
+      document.querySelectorAll('.container, .team-container, .chat-container, .settings-container')
+        .forEach(el => el.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      if (pageId === 'home') renderHomePage();
+      if (pageId === 'team') renderTeamPage();
+    }
+
+    function toggleTeamForm() {
+      const form = document.getElementById('teamForm');
+      form.classList.toggle('hidden');
+    }
+
+    function createTeam() {
+      const name = document.getElementById('taskName').value;
+      const owner = document.getElementById('taskOwner').value;
+      const deadline = document.getElementById('taskDeadline').value;
+      const priority = document.getElementById('taskPriority').value;
+      if (!name || !owner || !deadline) {
+        alert('すべての項目を入力してください。');
+        return;
+      }
+      const team = {
+        name,
+        owner,
+        deadline,
+        priority,
+        status: 'やってる',
+        progress: Math.floor(Math.random() * 100),
+        comments: [],
+        tasks: [
+          { title: 'タスクA', status: '未着手' },
+          { title: 'タスクB', status: '進行中' },
+          { title: 'タスクC', status: '完了' }
+        ]
+      };
+      teams.push(team);
+      renderHomePage();
+      toggleTeamForm();
+      document.getElementById('taskName').value = '';
+      document.getElementById('taskOwner').value = '';
+      document.getElementById('taskDeadline').value = '';
+      document.getElementById('taskPriority').value = '高';
+    }
+
+    function renderHomePage() {
+      const list = document.getElementById('teamList');
+      list.innerHTML = '';
+      teams.forEach((t, i) => {
+        const card = document.createElement('div');
+        card.className = 'team-card';
+        card.onclick = () => {
+          selectedTeamIndex = i;
+          showPage('team');
+        };
+        card.innerHTML = `
+          <div class="team-title">${t.name}</div>
+          <div>担当：${t.owner}</div>
+          <div>期限：${t.deadline}</div>
+          <div>優先度：${t.priority}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function renderTeamPage() {
+      const container = document.getElementById('team');
+      container.innerHTML = '';
+      if (selectedTeamIndex === null) return;
+      const t = teams[selectedTeamIndex];
+      const card = document.createElement('div');
+      card.className = 'team-card';
+      card.innerHTML = `
+        <div><strong>${t.name}</strong> - ${t.status}</div>
+        <div>担当：${t.owner}　期限：${t.deadline}　優先度：${t.priority}</div>
+        <div class="progress-bar"><div class="progress" style="width: ${t.progress}%;"></div></div>
+        <small>進捗：${t.progress}%</small>
+        <button class="submit-button" onclick="showTeamDetails(${selectedTeamIndex})">タスクを見る</button>
+        <div id="teamDetails-${selectedTeamIndex}" class="hidden"></div>
+      `;
+      container.appendChild(card);
+    }
+
+    function showTeamDetails(index) {
+      const team = teams[index];
+      const details = document.getElementById(`teamDetails-${index}`);
+      details.classList.toggle('hidden');
+      if (!details.classList.contains('hidden')) {
+        // タスク一覧表示
+        let html = '<h4>タスク一覧</h4>';
+        team.tasks.forEach(task => {
+          html += `<div>・${task.title} - ${task.status}</div>`;
+        });
+        // コメント欄
+        html += `
+          <h4>コメント</h4>
+          <div id="comments-${index}"></div>
+          <input type="text" id="commentInput-${index}" placeholder="コメントを入力" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+          <button class="submit-button" onclick="addComment(${index})">コメント送信</button>
+        `;
+        details.innerHTML = html;
+        renderComments(index);
+      }
+    }
+
+    function addComment(index) {
+      const input = document.getElementById(`commentInput-${index}`);
+      const comment = input.value.trim();
+      if (comment !== '') {
+        teams[index].comments.push(comment);
+        renderComments(index);
+        input.value = '';
+      }
+    }
+
+    function renderComments(index) {
+      const commentSection = document.getElementById(`comments-${index}`);
+      commentSection.innerHTML = '';
+      teams[index].comments.forEach(c => {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment';
+        commentDiv.textContent = c;
+        commentSection.appendChild(commentDiv);
+      });
+    }
+  </script>
+</body>
+</html>
